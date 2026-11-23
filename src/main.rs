@@ -1,13 +1,12 @@
 #![forbid(unsafe_code)]
 use std::{collections::HashMap, sync::Arc, time::Duration};
-use std::time::SystemTime;
 use tokio::{
     io::{AsyncReadExt, AsyncWriteExt, copy_bidirectional},
     net::{TcpListener, TcpStream},
     time::timeout,
 };
-use chrono::{SecondsFormat, Utc};
 use serde::Deserialize;
+use jiff::Timestamp;
 use uuid::Uuid;
 
 const MAX_HTTP_HEADERS: usize = 32 * 1024;
@@ -218,7 +217,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
     let config: Config = toml::from_str(&srversstr)?;
     let config = Arc::new(config);
     let printcfg = srversstr.replace("\n", " ");
-    let ts = chrono::DateTime::<Utc>::from(SystemTime::now()).to_rfc3339_opts(SecondsFormat::Millis, true);
+    let ts = Timestamp::now();
 
     println!("{ts} <-> kiagateway >>> service starting: HTTP (Host header inspection) on port 80, HTTPS (SNI inspection) on port 443");
     println!("{ts} <-> kiagateway >>> service config loaded: {}", printcfg);
@@ -234,14 +233,14 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
                     let txid = Uuid::new_v4().to_string();
                     tokio::spawn(async move {
                         if let Err(e) = handle_http(socket, cfg).await {
-                            let ts = chrono::DateTime::<Utc>::from(SystemTime::now()).to_rfc3339_opts(SecondsFormat::Millis, true);
+                            let ts = Timestamp::now();
                             println!("{ts} - {txid} - kiagateway >>> HTTP ERROR {}: {}", addr, e);
                         }
                     });
                 }
                 Err(e) => {
                     let txid = Uuid::new_v4().to_string();
-                    let ts = chrono::DateTime::<Utc>::from(SystemTime::now()).to_rfc3339_opts(SecondsFormat::Millis, true);
+                    let ts = Timestamp::now();
                     println!("{ts} - {txid} - kiagateway >>> HTTP accept ERROR: {}", e);
                 }
             }
@@ -258,14 +257,14 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
                 let txid = Uuid::new_v4().to_string();
                 tokio::spawn(async move {
                     if let Err(e) = handle_https(socket, cfg).await {
-                        let ts = chrono::DateTime::<Utc>::from(SystemTime::now()).to_rfc3339_opts(SecondsFormat::Millis, true);
+                        let ts = Timestamp::now();
                         println!("{ts} - {txid} - kiagateway >>> HTTPS ERROR {}: {}", addr, e);
                     }
                 });
             }
             Err(e) => {
                 let txid = Uuid::new_v4().to_string();
-                let ts = chrono::DateTime::<Utc>::from(SystemTime::now()).to_rfc3339_opts(SecondsFormat::Millis, true);
+                let ts = Timestamp::now();
                 println!("{ts} - {txid} - kiagateway >>> HTTPS accept ERROR: {}", e);
             }
         }
